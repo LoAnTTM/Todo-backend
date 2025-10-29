@@ -27,7 +27,7 @@
 
 ### **1\. Yêu cầu**
 
-* Python 3.8+  
+* Python 3.8+(Python 3.14.0)
 * Một CSDL PostgreSQL đang chạy.
 
 ### **2\. Cài đặt**
