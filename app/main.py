@@ -8,34 +8,33 @@ from .db import create_db_and_tables
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Context manager để xử lý các sự kiện khởi động và tắt ứng dụng.
+    Context manager to handle application startup and shutdown events.
     """
-    print("Ứng dụng đang khởi động...")
-    # Tạo bảng CSDL (nếu chúng chưa tồn tại) khi khởi động
+    print("Application starting...")
+    # Create database tables (if they do not exist) during startup
     create_db_and_tables()
     yield
-    # (Có thể thêm code dọn dẹp ở đây nếu cần)
-    print("Ứng dụng đang tắt...")
+    # (Add cleanup logic here if needed)
+    print("Application shutting down...")
 
-# Tạo đối tượng ứng dụng FastAPI
+# Create the FastAPI application instance
 app = FastAPI(
     title="Todo List API",
-    description="API cho ứng dụng Todo List theo guideline.",
+    description="API for the Todo List application.",
     version="1.0.0",
-    lifespan=lifespan # Gắn lifespan vào ứng dụng
+    lifespan=lifespan # Attach lifespan manager to the app
 )
 
-# Cấu hình CORS
+# Configure CORS
 setup_cors(app)
 
-# Thêm router (API endpoints) cho /todos
+# Register router (API endpoints) for /todos
 app.include_router(todos.router)
 
-# Thêm route gốc để kiểm tra API
-@app.get("/", tags=["Root"], summary="Kiểm tra API hoạt động")
+# Root route for API health check
+@app.get("/", tags=["Root"], summary="API health check")
 def read_root():
     """
-    Route gốc để kiểm tra nhanh API có đang chạy hay không.
+    Quick route to verify whether the API is running.
     """
-    return {"message": "Chào mừng bạn đến với Todo List API!"}
-
+    return {"message": "Welcome to the Todo List API!"}

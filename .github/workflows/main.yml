@@ -1,0 +1,21 @@
+name: Automation Runner (GitHub Actions)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  newman:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+      - name: Install Newman
+        run: npm install -g newman
+      - name: Run Postman collection
+        run: newman run 'Todo Backend.postman_collection.json'
