@@ -7,12 +7,17 @@ from .db import create_db_and_tables
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Context manager để xử lý các sự kiện khởi động và tắt ứng dụng.
+    """
     print("Ứng dụng đang khởi động...")
+    # Tạo bảng CSDL (nếu chúng chưa tồn tại) khi khởi động
     create_db_and_tables()
     yield
+    # (Có thể thêm code dọn dẹp ở đây nếu cần)
     print("Ứng dụng đang tắt...")
 
-#tao fast api
+# Tạo đối tượng ứng dụng FastAPI
 app = FastAPI(
     title="Todo List API",
     description="API cho ứng dụng Todo List theo guideline.",
@@ -20,13 +25,13 @@ app = FastAPI(
     lifespan=lifespan # Gắn lifespan vào ứng dụng
 )
 
-#config cors
+# Cấu hình CORS
 setup_cors(app)
 
-#add routes cho todo
+# Thêm router (API endpoints) cho /todos
 app.include_router(todos.router)
 
-#add route de check api
+# Thêm route gốc để kiểm tra API
 @app.get("/", tags=["Root"], summary="Kiểm tra API hoạt động")
 def read_root():
     """

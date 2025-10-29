@@ -1,29 +1,27 @@
-# PyCharm specific files and directories
-.idea/
-*.iml
-*.ipr
-*.iws
-
-# Python specific files and directories
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
 *.pyd
-*.so
+env/
+venv/
 .Python
+
+# Virtualenv
+.env
+.venv
+
+# Distribution / packaging
 build/
 dist/
 *.egg-info/
-.env/
-venv/
-env/
 
-# Operating System specific files
-.DS_Store
-.Trashes
-Thumbs.db
+# IDEs
+.vscode/
+.idea/
 
-# Other common ignored files
+# Pytest cache
 .pytest_cache/
-htmlcov/
-.coverage
 
+# Logs
+*.log
