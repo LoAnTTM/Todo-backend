@@ -1,129 +1,110 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from .. import models, schemas
 from ..db import get_db
 
-# Tạo một APIRouter mới
+# Khởi tạo router
 router = APIRouter(
-    prefix="/todos",  # Tiền tố cho tất cả các route trong router này
-    tags=["Todos"],  # Tag để nhóm các API trong tài liệu Swagger
+    prefix="/todos",  # Tất cả API trong file này sẽ có tiền tố /todos
+    tags=["Todos"]  # Nhóm các API này vào nhóm "Todos" trong docs
 )
 
 
-@router.get(
-    "/",
-    response_model=List[schemas.Todo],
-    summary="Lấy danh sách tất cả Todos"
-)
-def get_all_todos(db: Session = Depends(get_db)):
+# === 1. GET /todos ===
+@router.get("/", response_model=List[schemas.Todo], summary="Lấy danh sách tất cả Todos")
+def read_todos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
-    Lấy danh sách tất cả các mục công việc.
+    Lấy về một danh sách các todo.
     """
-    todos = db.query(models.Todo).all()
+    todos = db.query(models.Todo).offset(skip).limit(limit).all()
     return todos
 
 
-@router.post(
-    "/",
-    response_model=schemas.Todo,
-    status_code=status.HTTP_201_CREATED,
-    summary="Tạo một Todo mới"
-)
-def create_todo(
-        todo_create: schemas.TodoCreate,
-        db: Session = Depends(get_db)
-):
+# === 2. POST /todos ===
+@router.post("/", response_model=schemas.Todo, status_code=status.HTTP_201_CREATED, summary="Tạo một Todo mới")
+def create_todo(todo: schemas.TodoCreate, db: Session = Depends(get_db)):
     """
-    Tạo một mục công việc mới.
-
-    - **title**: Tiêu đề của công việc (bắt buộc, 1-140 ký tự).
+    Tạo một todo mới.
+    - **title**: Tiêu đề của todo (bắt buộc, <= 140 ký tự).
     """
-    # FastAPI đã tự động validate 'todo_create' dựa trên schema TodoCreate
-    # Nếu validation thất bại, client sẽ nhận lỗi 422 Unprocessable Entity
+    # Tạo model SQLAlchemy từ schema Pydantic
+    db_todo = models.Todo(title=todo.title)
 
-    # Tạo đối tượng model SQLAlchemy
-    new_todo = models.Todo(title=todo_create.title)
+    # Thêm vào session
+    print(db_todo)
 
-    # Thêm vào session CSDL
-    db.add(new_todo)
-    # Commit thay đổi
+    db.add(db_todo)
+
+    print(db_todo)
+
+    # --- DÒNG QUAN TRỌNG NHẤT ---
+    # Commit (lưu) thay đổi vào CSDL
     db.commit()
-    # Refresh để lấy ID đã được CSDL tạo
-    db.refresh(new_todo)
+    # -----------------------------
 
-    # Trả về đối tượng đã tạo
-    return new_todo
-
-
-@router.patch(
-    "/{id}",
-    response_model=schemas.Todo,
-    summary="Cập nhật một Todo"
-)
-def update_todo(
-        id: int,
-        todo_update: schemas.TodoUpdate,
-        db: Session = Depends(get_db)
-):
-    """
-    Cập nhật tiêu đề hoặc trạng thái hoàn thành của một công việc.
-
-    - **id**: ID của công việc cần cập nhật.
-    - **title** (tùy chọn): Tiêu đề mới.
-    - **done** (tùy chọn): Trạng thái hoàn thành mới.
-    """
-    # 1. Tìm todo trong CSDL
-    db_todo = db.query(models.Todo).filter(models.Todo.id == id).first()
-
-    # 2. Nếu không tìm thấy, trả về lỗi 404
-    if db_todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Todo not found"
-        )
-
-    # 3. Lấy dữ liệu cập nhật từ Pydantic model
-    # exclude_unset=True nghĩa là chỉ lấy các trường đã được client gửi lên
-    update_data = todo_update.model_dump(exclude_unset=True)
-
-    # 4. Cập nhật các trường
-    for key, value in update_data.items():
-        setattr(db_todo, key, value)
-
-    # 5. Commit và refresh
-    db.commit()
+    # Làm mới (refresh) db_todo để lấy ID vừa được CSDL tạo ra
     db.refresh(db_todo)
 
+    # Trả về đối tượng vừa tạo
     return db_todo
 
 
-@router.delete(
-    "/{id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Xóa một Todo"
-)
+# === 3. PATCH /todos/{id} ===
+@router.patch("/{id}", response_model=schemas.Todo, summary="Cập nhật một Todo")
+def update_todo(id: int, todo_update: schemas.TodoUpdate, db: Session = Depends(get_db)):
+    """
+    Cập nhật một todo đã tồn tại bằng ID.
+    Bạn có thể cập nhật `title` hoặc `done` (hoặc cả hai).
+    """
+    # Tìm todo trong CSDL
+    db_todo = db.query(models.Todo).get(id)
+
+    # Nếu không tìm thấy, báo lỗi 404
+    if not db_todo:
+        raise HTTPException(status_code=404, detail="Todo không tìm thấy")
+
+    # Lấy dữ liệu từ Pydantic model (chỉ lấy các trường đã được gửi lên)
+    update_data = todo_update.dict(exclude_unset=True)
+
+    # Cập nhật từng trường
+    for key, value in update_data.items():
+        setattr(db_todo, key, value)
+
+    # Thêm vào session (để đánh dấu là đã thay đổi)
+    db.add(db_todo)
+
+    # --- DÒNG QUAN TRỌNG ---
+    # Commit thay đổi
+    db.commit()
+    # -----------------------
+
+    # Làm mới để lấy dữ liệu mới nhất
+    db.refresh(db_todo)
+
+    # Trả về todo đã cập nhật
+    return db_todo
+
+
+# === 4. DELETE /todos/{id} ===
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT, summary="Xóa một Todo")
 def delete_todo(id: int, db: Session = Depends(get_db)):
     """
-    Xóa một mục công việc dựa trên ID.
-
-    - **id**: ID của công việc cần xóa.
+    Xóa một todo bằng ID.
     """
-    # 1. Tìm todo
-    db_todo = db.query(models.Todo).filter(models.Todo.id == id).first()
+    db_todo = db.query(models.Todo).get(id)
 
-    # 2. Nếu không tìm thấy, trả về lỗi 404
-    if db_todo is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Todo not found"
-        )
+    if not db_todo:
+        raise HTTPException(status_code=404, detail="Todo không tìm thấy")
 
-    # 3. Xóa và commit
     db.delete(db_todo)
-    db.commit()
 
-    # 4. Trả về status 204 (No Content)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    # --- DÒNG QUAN TRỌNG ---
+    # Commit thay đổi
+    db.commit()
+    # -----------------------
+
+    # Trả về status 204 (No Content)
+    return
 
