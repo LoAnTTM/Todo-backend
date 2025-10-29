@@ -1,0 +1,9 @@
+#Các thư viện chính của FastAPI
+
+fastapi
+uvicorn[standard]
+
+#Thư viện cho CSDL
+
+sqlalchemy
+psycopg2-binary # Driver PostgreSQL cho Python
