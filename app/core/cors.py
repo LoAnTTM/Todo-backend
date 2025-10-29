@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os # Thêm thư viện 'os'
 
-# Theo guideline là http://localhost:5173 (cổng mặc định của Vite)
-origins = [
-    "http://localhost:5173",
-]
+raw_origins = os.environ.get("CORS_ORIGINS", "http://localhost:5173")
+
+origins = [origin.strip() for origin in raw_origins.split(",")]
+
 
 def setup_cors(app: FastAPI):
     """
@@ -12,10 +13,10 @@ def setup_cors(app: FastAPI):
     """
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,       # Cho phép các origin trong danh sách
-        allow_credentials=True,    # Cho phép gửi cookie (nếu có)
-        allow_methods=["*"],       # Cho phép tất cả các phương thức (GET, POST, v.v.)
-        allow_headers=["*"],       # Cho phép tất cả các header
+        allow_origins=origins,       # Sử dụng biến 'origins' đã đọc
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
-    print("Đã cấu hình CORS cho phép origin: http://localhost:5173")
+    print(f"Đã cấu hình CORS cho phép origin: {', '.join(origins)}")
 
