@@ -1,0 +1,255 @@
+{
+	"info": {
+		"_postman_id": "9281a60d-d108-47c9-bdfc-b8a09567544c",
+		"name": "Todo Backend (FastAPI)",
+		"description": "## Todo Backend API Collection\n\nThis Postman collection documents the primary endpoints exposed by the Todo Backend service built with FastAPI. Use it to explore and validate the API locally or in any deployed environment.\n\n### Getting Started\n1. Update the `baseUrl` variable (defaults to `http://localhost:8000`).\n2. Set `todo_id` to a valid identifier when using the update or delete requests.\n3. Run requests in order (create ➜ fetch ➜ update ➜ delete) to follow the typical todo workflow.\n\n### Authentication\nThe current API does not require authentication. All endpoints are open as long as the service is reachable.\n\n### Error Handling\nEach request is documented with success and failure responses. On errors, the API returns an appropriate HTTP status code and JSON body with a `detail` field describing the issue.\n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "28562076"
+	},
+	"item": [
+		{
+			"name": "1. [POST] Create a new todo",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.test(\"Response contains id, title, and done\", function () {",
+							"    pm.expect(jsonData).to.have.property(\"id\");",
+							"    pm.expect(jsonData).to.have.property(\"title\");",
+							"    pm.expect(jsonData).to.have.property(\"done\");",
+							"});",
+							"",
+							"pm.collectionVariables.set(\"todo_id\", jsonData.id);",
+							"pm.collectionVariables.set(\"todo_title\", jsonData.title);"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"title\": \"Hello\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/todos",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"todos"
+					]
+				},
+				"description": "### Purpose\nCreates a new todo item and persists it in the database.\n\n### Request Body\n- `title` *(string, required)* — must be 1-140 characters.\n\n### Success Response\n- **201 Created** — returns the full todo object (`id`, `title`, `done`).\n\n### Failure Responses\n- **422 Unprocessable Entity** — validation error (e.g., missing or too long title).\n"
+			},
+			"response": []
+		},
+		{
+			"name": "2. [GET] Fetch all todos",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response is an array\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    pm.expect(Array.isArray(jsonData)).to.be.true;",
+							"});",
+							"",
+							"pm.test(\"Array items contain required fields\", function () {",
+							"    const jsonData = pm.response.json();",
+							"    if (jsonData.length) {",
+							"        const todo = jsonData[0];",
+							"        pm.expect(todo).to.have.property(\"id\");",
+							"        pm.expect(todo).to.have.property(\"title\");",
+							"        pm.expect(todo).to.have.property(\"done\");",
+							"    }",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/todos?skip=0&limit=100",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"todos"
+					],
+					"query": [
+						{
+							"key": "skip",
+							"value": "0",
+							"description": "Number of items to skip (pagination)."
+						},
+						{
+							"key": "limit",
+							"value": "100",
+							"description": "Maximum number of items to return."
+						}
+					]
+				},
+				"description": "### Purpose\nRetrieves a list of todo items with optional pagination controls.\n\n### Query Parameters\n- `skip` *(int, optional)* — defaults to 0.\n- `limit` *(int, optional)* — defaults to 100.\n\n### Success Response\n- **200 OK** — returns an array of todos.\n\n### Failure Responses\n- **500 Internal Server Error** — unexpected server issues (e.g., database connectivity).\n"
+			},
+			"response": []
+		},
+		{
+			"name": "3. [PATCH] Update todo (toggle)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"const jsonData = pm.response.json();",
+							"pm.test(\"Updated todo reflects changes\", function () {",
+							"    pm.expect(jsonData).to.have.property(\"id\");",
+							"    pm.expect(jsonData).to.have.property(\"done\", true);",
+							"});",
+							"",
+							"pm.collectionVariables.set(\"todo_title\", jsonData.title);"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"done\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/todos/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"todos",
+						"1"
+					]
+				},
+				"description": "### Purpose\nUpdates selected fields of an existing todo. Useful for toggling completion or editing the title.\n\n### Path Parameters\n- `todo_id` *(int, required)* — ID of the todo to update.\n\n### Request Body\nAt least one of the following fields:\n- `title` *(string)* — 1-140 characters.\n- `done` *(boolean)* — completion status.\n\n### Success Response\n- **200 OK** — returns the updated todo object.\n\n### Failure Responses\n- **404 Not Found** — no todo matches the provided `todo_id`.\n- **422 Unprocessable Entity** — invalid payload (e.g., empty title).\n"
+			},
+			"response": []
+		},
+		{
+			"name": "4. [DELETE] Remove todo",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 204\", function () {",
+							"    pm.response.to.have.status(204);",
+							"});",
+							"",
+							"pm.collectionVariables.unset(\"todo_id\");",
+							"pm.collectionVariables.unset(\"todo_title\");"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/todos/1",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"todos",
+						"1"
+					]
+				},
+				"description": "### Purpose\nDeletes a todo permanently.\n\n### Path Parameters\n- `todo_id` *(int, required)* — ID of the todo to delete.\n\n### Success Response\n- **204 No Content** — deletion succeeded; response body is empty.\n\n### Failure Responses\n- **404 Not Found** — no todo matches the provided `todo_id`.\n"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8000",
+			"description": {
+				"content": "Base URL for the Todo API. Update this when targeting other environments.",
+				"type": "text/plain"
+			}
+		}
+	]
+}
