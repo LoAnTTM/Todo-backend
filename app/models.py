@@ -4,16 +4,15 @@ from .db import Base
 
 class Todo(Base):
     """
-    Model SQLAlchemy đại diện cho một mục 'Todo' trong CSDL.
+    SQLAlchemy model representing a Todo item in the database.
     """
     __tablename__ = "todos"
 
-    #collum id
+    # Column id
     id = Column(Integer, primary_key=True, index=True)
 
-    #collum title
+    # Column title
     title = Column(String(140), nullable=False, index=True)
 
-    #collum trang thai, default false
+    # Column completion status, default false
     done = Column(Boolean, default=False, nullable=False)
-

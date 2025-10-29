@@ -1,5 +1,5 @@
 services:
-  # Service CSDL PostgreSQL
+  # PostgreSQL database service
   db:
     image: postgres:15
     restart: always
@@ -14,14 +14,14 @@ services:
     ports:
       - "5432:5432"
 
-    # Health check để kiểm tra khi nào CSDL thực sự sẵn sàng
+    # Health check to verify when the database is ready
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Service Backend FastAPI
+  # FastAPI backend service
   web:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
