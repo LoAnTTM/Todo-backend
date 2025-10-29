@@ -1,18 +1,37 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL") or "postgresql://postgres:password@db:5432/tododb"
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:1234@localhost:5432/tododb")
 
-engine = create_engine(DATABASE_URL, echo=True, future=True)
+# creat engine
+engine = create_engine(DATABASE_URL)
+
+# create session local
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# create base cho models
 Base = declarative_base()
 
-# Dependency for FastAPI endpoints
+# create db
+def create_db_and_tables():
+    """
+    Tạo tất cả các bảng trong CSDL được định nghĩa bởi Base.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Đã tạo bảng CSDL thành công.")
+    except Exception as e:
+        print(f"Lỗi khi tạo bảng CSDL: {e}")
+
+# cho fastApi get db
 def get_db():
+    """
+    Dependency: Cung cấp một phiên CSDL cho mỗi request,
+    tự động đóng phiên sau khi request hoàn tất.
+    """
     db = SessionLocal()
     try:
         yield db
